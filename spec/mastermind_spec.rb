@@ -157,7 +157,7 @@ describe "Mastermind" do
 	describe "#guesser_loses" do
 		it "displays the correct information" do
 			@game.instance_variable_set(:@code, [1, 2, 3, 4])
-			message = "Out of turns! The correct code was 1234."
+			message = "\nOut of turns! The correct code was 1234."
 			expect(STDOUT).to receive(:puts).with(message)
 			@game.guesser_loses
 		end
