@@ -20,11 +20,29 @@ module Game
 
 		def new_game
 			reset_variables
+			choose_role
+			@player_role == "1" ? player_guessing_loop : computer_guessing_loop
+		end
+
+		def choose_role
+			puts "Would you like to be the one making or guessing the code?"
+			puts "[1] - Guess the code\n[2] - Make the code"
+			@player_role = gets.chomp.upcase[0]
+			until @player_role == "1" || @player_role == "2"
+				puts "Sorry, please enter either 1 or 2.\n[1] - Guess the code\n[2] - Make the code"
+				@player_role = gets.chomp.upcase[0]
+			end
+		end
+
+		def player_guessing_loop
 			while game_continues?
 				turn
 			end
 			correct_guess? ? guesser_wins : guesser_loses
-			new_game if play_again? 
+			new_game if play_again?
+		end
+
+		def computer_guessing_loop
 		end
 
 		def reset_variables
@@ -69,7 +87,7 @@ module Game
 
 		def enter_valid_guess
 			puts "Please enter a valid guess. (4 digits between 1 and 6)"
-			@guess = gets.chomp.split("")
+			@guess = gets.chomp.chars.map! {|x| x.to_i}
 		end
 
 		def game_continues?
