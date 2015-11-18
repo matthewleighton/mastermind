@@ -86,7 +86,6 @@ module Game
 # -------- Entry validation ----------------
 
 		def valid_entry?
-			p @code # TEST LINE
 			@player_role == "guess" ? entry = @guess : entry = @code
 			if entry.count != 4 || !(entry.all? { |x| (1..6).include? x.to_i } )
 				false
@@ -113,23 +112,21 @@ module Game
 		end
 
 		def calculate_feedback
-			code_copy = @code.dup
-			correct_position = 0
-			wrong_position = 0
-			@guess.each_with_index do |x, i|
+			code_copy, guess_copy = @code.dup, @guess.dup
+			correct_position, wrong_position = 0, 0
+			guess_copy.each_with_index do |x, i|
 				if code_copy[i] == x
 					correct_position += 1
-					code_copy[i] = nil
-					x = nil
+					code_copy[i], guess_copy[i] = nil, nil
 				end
 			end
-			@guess.each_with_index do |x, i|
+			guess_copy.each_with_index do |x, i|
 				if x != nil
 					if code_copy.include?(x)
 					wrong_position += 1
 					code_copy[code_copy.index(x)] = nil
-				end
-			end	
+					end
+				end	
 			end
 			@feedback = { :correct_position => correct_position,
 										:wrong_position => wrong_position }
@@ -171,7 +168,6 @@ module Game
 			until valid_entry?
 				enter_valid_entry
 			end
-			p "woop!"
 		end
 
 		def computer_guessing_loop
