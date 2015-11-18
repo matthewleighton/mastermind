@@ -12,6 +12,7 @@ module Game
 				code << rand(1..6)			
 			end
 			code
+			#[1,1,1,4]
 		end
 
 		def begin_game
@@ -22,12 +23,17 @@ module Game
 		def new_game
 			reset_variables
 			choose_role
-			if @player_role == "guess"
-				player_guessing_loop
-			else
-				enter_code
-				computer_guessing_loop
+			enter_code if @player_role == "make"
+			guessing_loop
+		end
+
+		def guessing_loop
+			while game_continues?
+				@player_role == "guess" ? player_turn : ai_turn
+				@remaining_turns -= 1
 			end
+			correct_guess? ? guesser_wins : guesser_loses
+			new_game if play_again?
 		end
 
 		def choose_role
@@ -43,9 +49,13 @@ module Game
 
 		def reset_variables
 			@correct_guess = false
+			@guess = []
 			@code = generate_code
 			@remaining_turns = 12
 			@feedback_log = []
+			# -- AI variables --
+			@ai_num = 1
+			@ai_stage_one = true
 		end
 
 		def introduction
@@ -59,17 +69,9 @@ module Game
 
 # ------- Player Guessing --------------
 
-		def player_guessing_loop
-			while game_continues?
-				turn
-			end
-			correct_guess? ? guesser_wins : guesser_loses
-			new_game if play_again?
-		end
-
-		def turn
+		def player_turn
 			puts @remaining_turns == 1 ? "\n#{@remaining_turns} guess remaining." : "\n#{@remaining_turns} guesses remaining."
-			@remaining_turns -= 1
+			#@remaining_turns -= 1
 			puts "Enter your guess:"
 			@guess = gets.chomp.chars.map! {|x| x.to_i}
 			puts ""
@@ -170,7 +172,22 @@ module Game
 			end
 		end
 
-		def computer_guessing_loop
+		def ai_turn
+			sleep(0.05)
+			p "---------" # Test line
+			if @ai_stage_one == true
+				@guess = [1, 1, @ai_num, @ai_num]
+				@ai_num += 1
+				p @guess
+				unless correct_guess?
+					calculate_feedback
+					update_logs
+					display_feedback
+				end
+			end
+		end
+
+		def ai_find_included_numbers
 
 		end
 
