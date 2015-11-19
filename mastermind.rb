@@ -29,6 +29,7 @@ module Game
 
 		def guessing_loop
 			while game_continues?
+				puts @remaining_turns == 1 ? "\n#{@remaining_turns} guess remaining." : "\n#{@remaining_turns} guesses remaining."
 				@player_role == "guess" ? player_turn : ai_turn
 				@remaining_turns -= 1
 			end
@@ -56,6 +57,8 @@ module Game
 			# -- AI variables --
 			@ai_num = 1
 			@ai_stage_one = true
+			@ai_stage_two = false
+			@original_feedback = false
 		end
 
 		def introduction
@@ -70,7 +73,6 @@ module Game
 # ------- Player Guessing --------------
 
 		def player_turn
-			puts @remaining_turns == 1 ? "\n#{@remaining_turns} guess remaining." : "\n#{@remaining_turns} guesses remaining."
 			#@remaining_turns -= 1
 			puts "Enter your guess:"
 			@guess = gets.chomp.chars.map! {|x| x.to_i}
@@ -145,7 +147,8 @@ module Game
 		end
 
 		def guesser_wins
-			puts "Congratulations! You guessed the correct code (#{@code.join("")}) after #{12-@remaining_turns} guesses!"
+			print @player_role == "guess" ? "Congratulations! You " : "The computer "
+			print "guessed the correct code (#{@code.join("")}) after #{12-@remaining_turns} guesses!\n"
 		end
 
 		def guesser_loses
@@ -177,9 +180,14 @@ module Game
 			p "---------" # Test line
 			if @ai_stage_one == true
 				@guess = [1, 1, @ai_num, @ai_num]
-				@ai_num += 1
+				@ai_num += 1 if @ai_num < 6
 				p @guess
 				unless correct_guess?
+					@original_feedback ||= @feedback
+					#if @remaining_turns
+					# if @original_feedback && @feedback != @original_feedback
+						# Do something to assign numbers to left/right variables
+					# end
 					calculate_feedback
 					update_logs
 					display_feedback
