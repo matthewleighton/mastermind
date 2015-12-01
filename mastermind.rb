@@ -6,13 +6,19 @@ module Game
 			@guess = []
 		end
 
-		def generate_code
-			code = []
-			4.times do |x|
-				code << rand(1..6)			
-			end
-			code
-			#[1,1,1,4]
+		def reset_variables
+			@correct_guess = false
+			@guess = []
+			@code = generate_code
+			@remaining_turns = 12
+			@feedback_log = []
+			# -- AI variables --
+			@ai_num = 1
+			@ai_stage = 1
+			@original_feedback = false
+			@left_column = []
+			@right_column = []
+			@stage_three_iteration = 1
 		end
 
 		def begin_game
@@ -27,14 +33,12 @@ module Game
 			guessing_loop
 		end
 
-		def guessing_loop
-			while game_continues?
-				puts @remaining_turns == 1 ? "\n#{@remaining_turns} guess remaining." : "\n#{@remaining_turns} guesses remaining."
-				@player_role == "guess" ? player_turn : ai_turn
-				@remaining_turns -= 1
+		def generate_code
+			code = []
+			4.times do |x|
+				code << rand(1..6)
 			end
-			correct_guess? ? guesser_wins : guesser_loses
-			new_game if play_again?
+			code
 		end
 
 		def choose_role
@@ -46,19 +50,6 @@ module Game
 				player_role = gets.chomp.upcase[0]
 			end
 			player_role == "1" ? @player_role = "guess" : @player_role = "make"
-		end
-
-		def reset_variables
-			@correct_guess = false
-			@guess = []
-			@code = generate_code
-			@remaining_turns = 12
-			@feedback_log = []
-			# -- AI variables --
-			@ai_num = 1
-			@ai_stage_one = true
-			@ai_stage_two = false
-			@original_feedback = false
 		end
 
 		def introduction
@@ -80,11 +71,17 @@ module Game
 			until valid_entry?
 				enter_valid_entry
 			end
-			unless correct_guess?
-				calculate_feedback
-				update_logs
-				display_feedback
+			submit_guess
+		end
+
+		def guessing_loop
+			while game_continues?
+				puts @remaining_turns == 1 ? "\n#{@remaining_turns} guess remaining." : "\n#{@remaining_turns} guesses remaining."
+				@player_role == "guess" ? player_turn : ai_turn
+				@remaining_turns -= 1
 			end
+			correct_guess? ? guesser_wins : guesser_loses
+			new_game if play_again?
 		end
 
 # -------- Entry validation ----------------
@@ -106,6 +103,14 @@ module Game
 		end
 
 # --------------------------------------------		
+
+	def submit_guess
+		unless correct_guess?
+			calculate_feedback
+			update_logs
+			display_feedback
+		end
+	end
 
 		def game_continues?
 			(@remaining_turns > 0) && !(correct_guess?) ? true : false
@@ -134,15 +139,16 @@ module Game
 			end
 			@feedback = { :correct_position => correct_position,
 										:wrong_position => wrong_position }
+			@feedback_total = @feedback[:correct_position] + @feedback[:wrong_position]
 		end
 
 		def update_logs
-			@feedback_log << [@guess.join(""), "#{@feedback[:correct_position]}/#{@feedback[:wrong_position]}"]
+			@feedback_log << [@guess.join(""), @feedback[:correct_position], @feedback[:wrong_position]]
 		end
 
 		def display_feedback
 			@feedback_log.each_with_index do |x, i|
-				puts "Turn #{i+1}: #{x[0]} #{x[1]}"
+				puts "Turn #{i+1}: #{x[0]} #{x[1]}/#{x[2]}"
 			end
 		end
 
@@ -178,27 +184,164 @@ module Game
 		def ai_turn
 			sleep(0.05)
 			p "---------" # Test line
-			if @ai_stage_one == true
+			
+			if @remaining_turns == 12
+				# Do actions for first turn.
 				@guess = [1, 1, @ai_num, @ai_num]
-				@ai_num += 1 if @ai_num < 6
+				submit_guess
+				@original_feedback = @feedback
+				@original_feedback_total = @feedback_total
+				@ai_num += 1
+				if @feedback_total == 0
+					@ai_stage = 2
+					@block_number = @ai_num
+				end
+			elsif @ai_stage == 1
+				ai_stage_one
+			elsif @ai_stage == 2
+				ai_stage_two
+			elsif @ai_stage == 3
+				ai_stage_three
+			end
+		end
+
+=begin
+			if @ai_stage_one == true # Identify a number not included in the code.
+				@guess = [1, 1, @ai_num, @ai_num]
+
+
+				if @feedback[0] + @feedback[1] <= @original_feedback[0] + @original_feedback[1] && @remaining_turns != 12
+					@blank_num = @ai_num
+					# Do stuff to move onto stage two.
+				else
+					@guess = [1, 1, @ai_num, @ai_num]
+				end
 				p @guess
 				unless correct_guess?
-					@original_feedback ||= @feedback
-					#if @remaining_turns
-					# if @original_feedback && @feedback != @original_feedback
-						# Do something to assign numbers to left/right variables
-					# end
 					calculate_feedback
+					@original_feedback = @feedback if @original_feedback == false
+					#calculate_columns
+					p "Feedback is #{@feedback}"
+					p "original_feedback is #{@original_feedback}"
 					update_logs
 					display_feedback
+				end
+			elsif @ai_stage_two # Fill the left and right lists.
+
+			elsif @ai_stage_three # Guess the true code
+			end
+=end
+
+		# Identify a number not included in the code.
+		def ai_stage_one
+			@guess = [1, 1, @ai_num, @ai_num]
+			submit_guess
+			@ai_num += 1
+			if @feedback_total <= @original_feedback_total && @remaining_turns < 12
+				@block_number = @ai_num - 1
+				@ai_stage = 2
+				stage_two_initial_check
+			end
+		end
+
+		# Fill the left and right lists.
+		def ai_stage_two
+			p "REACHED STAGE TWO"
+			@guess = [@block_number, @block_number, @ai_num, @ai_num]
+			submit_guess
+			@ai_num += 1
+			if @feedback_total > 0
+				@feedback[:correct_position].times { @right_column << @guess[2] }
+				@feedback[:wrong_position].times { @left_column << @guess[2] }
+			end
+			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
+			p "Left column: #{@left_column}" # TEST LINE
+			p "Right column: #{@right_column}" # TEST LINE
+		end
+
+		# Guess the corret code
+		def ai_stage_three
+			p "REACHED STAGE 3" # TEST LINE
+			@stage_3_order_1 = [@left_column[0], @left_column[1], @right_column[0], @right_column[1]]
+			@stage_3_order_2 = [@left_column[0], @left_column[1], @right_column[1], @right_column[0]]
+			@stage_3_order_3 = [@left_column[1], @left_column[0], @right_column[0], @right_column[1]]
+			@stage_3_order_4 = [@left_column[1], @left_column[0], @right_column[1], @right_column[0]]
+			case @stage_three_iteration
+			when 1
+				@guess = @stage_3_order_1
+			when 2
+				@guess = @stage_3_order_2
+			when 3
+				@guess = @stage_3_order_3
+			when 4
+				@guess = @stage_3_order_4
+			end
+			p @guess
+			p @stage_3_order_4
+			submit_guess
+			@stage_three_iteration += 1
+		end
+
+		def stage_two_initial_check
+			p "DOING INITIAL STAGE 2 CHECK" # TEST LINE
+			# Most recent turn
+			@feedback_log[-1][1].to_i.times do
+				@left_column << 1
+			end
+			@feedback_log[-1][2].to_i.times do
+				@right_column << 1
+			end
+			x = -2
+			p "Feedback log total: #{@feedback_log.count}" # TEST LINE
+			until x == 0 - @feedback_log.count
+				# Establishing which instance of feedback we're looking at.
+				p "----#{@feedback_log[x][2]}"
+				current_feedback = []
+				current_feedback << (@feedback_log[x][1].to_i - @feedback_log[-1][1].to_i) # Amount correct
+				current_feedback << (@feedback_log[x][2].to_i - @feedback_log[-1][2].to_i) # Amount wrong
+				current_feedback << @feedback_log[x][0] # Guess
+				p current_feedback # TEST LINE
+				p @feedback_log.count # TEST LINE
+				p x # TEST LINE
+
+				# Adding numbers to columns based on feedback.
+				p "!!!!!!!#{current_feedback}"
+				current_feedback[0].to_i.times { @right_column << current_feedback[2][2].to_i }
+				current_feedback[1].to_i.times { @left_column << current_feedback[2][2].to_i }
+
+				x -= 1
+			end
+			p "LEFT COLUMN: #{@left_column}"
+			p "RIGHT COLUMN: #{@right_column}"
+
+			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
+		end
+
+		# This assigns numbers the 3rd and 4th numbers of the guess to the appropriate columns.
+		def calculate_columns
+			if @original_feedback  && @feedback != @original_feedback && @feedback.inject{ |sum, x| sum + x } > 0
+				if @original_feedback == 0
+					# Instead of just adding the number, this needs to add it the appropriate amount of times.
+					# Calculate the amount based on the current feedback total minus the original feedback.
+					# E.g. original = 0/0 and current = 2/0. We therefore add the number twice to the right column.
+					# E.g. original = 2/0 and current = 1/2. We therefore add 
+					((@original_feedback.inject{ |sum, x| sum + x }) - (@feedback.inject{ |sum, x| + x })).times do
+						@left_column << @guess[2] if @feedback[0] > 0
+						@right_column << @guess[2] if @feedback[1] > 0
+						#p "TEST 1"
+					end
+				elsif @original_feedback > 0
+					((@original_feedback.inject{ |sum, x| sum + x }) - (@feedback.inject{ |sum, x| + x })).times do
+						@left_column << @guess[2] if @feedback[1] > 0
+						@right_column << @guess[2] if @feedback[0] > 0
+						#p "TEST 2"
+					end
 				end
 			end
 		end
 
-		def ai_find_included_numbers
-
-		end
-
-
 	end # End of Mastermind class
 end # End of Game module
+
+
+##Change calculate_feedback to generate an array instead of a hash.
