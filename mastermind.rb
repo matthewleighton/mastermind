@@ -64,7 +64,6 @@ module Game
 # ------- Player Guessing --------------
 
 		def player_turn
-			#@remaining_turns -= 1
 			puts "Enter your guess:"
 			@guess = gets.chomp.chars.map! {|x| x.to_i}
 			puts ""
@@ -194,7 +193,7 @@ module Game
 				@ai_num += 1
 				if @feedback_total == 0
 					@ai_stage = 2
-					@block_number = @ai_num
+					@block_number = @ai_num - 1
 				end
 			elsif @ai_stage == 1
 				ai_stage_one
@@ -204,33 +203,6 @@ module Game
 				ai_stage_three
 			end
 		end
-
-=begin
-			if @ai_stage_one == true # Identify a number not included in the code.
-				@guess = [1, 1, @ai_num, @ai_num]
-
-
-				if @feedback[0] + @feedback[1] <= @original_feedback[0] + @original_feedback[1] && @remaining_turns != 12
-					@blank_num = @ai_num
-					# Do stuff to move onto stage two.
-				else
-					@guess = [1, 1, @ai_num, @ai_num]
-				end
-				p @guess
-				unless correct_guess?
-					calculate_feedback
-					@original_feedback = @feedback if @original_feedback == false
-					#calculate_columns
-					p "Feedback is #{@feedback}"
-					p "original_feedback is #{@original_feedback}"
-					update_logs
-					display_feedback
-				end
-			elsif @ai_stage_two # Fill the left and right lists.
-
-			elsif @ai_stage_three # Guess the true code
-			end
-=end
 
 		# Identify a number not included in the code.
 		def ai_stage_one
@@ -254,7 +226,13 @@ module Game
 				@feedback[:correct_position].times { @right_column << @guess[2] }
 				@feedback[:wrong_position].times { @left_column << @guess[2] }
 			end
-			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
+			if @left_column.count == 2 && @right_column.count == 2
+				@ai_stage = 3
+			elsif @ai_num == 7				
+				fill_empty_columns
+				@ai_stage = 3
+			end
+			#@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
 			p "Left column: #{@left_column}" # TEST LINE
 			p "Right column: #{@right_column}" # TEST LINE
 		end
@@ -317,31 +295,14 @@ module Game
 			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
 		end
 
-		# This assigns numbers the 3rd and 4th numbers of the guess to the appropriate columns.
-		def calculate_columns
-			if @original_feedback  && @feedback != @original_feedback && @feedback.inject{ |sum, x| sum + x } > 0
-				if @original_feedback == 0
-					# Instead of just adding the number, this needs to add it the appropriate amount of times.
-					# Calculate the amount based on the current feedback total minus the original feedback.
-					# E.g. original = 0/0 and current = 2/0. We therefore add the number twice to the right column.
-					# E.g. original = 2/0 and current = 1/2. We therefore add 
-					((@original_feedback.inject{ |sum, x| sum + x }) - (@feedback.inject{ |sum, x| + x })).times do
-						@left_column << @guess[2] if @feedback[0] > 0
-						@right_column << @guess[2] if @feedback[1] > 0
-						#p "TEST 1"
-					end
-				elsif @original_feedback > 0
-					((@original_feedback.inject{ |sum, x| sum + x }) - (@feedback.inject{ |sum, x| + x })).times do
-						@left_column << @guess[2] if @feedback[1] > 0
-						@right_column << @guess[2] if @feedback[0] > 0
-						#p "TEST 2"
-					end
-				end
+		def fill_empty_columns
+			both_columns = @left_column + @right_column
+			missing_number = both_columns.detect{ |num| both_columns.count(num) > 1 }
+			while @left_column.count < 2 || @right_column.count < 2
+				@left_column << missing_number if @left_column.count < 2
+				@right_column << missing_number if @right_column.count < 2
 			end
 		end
 
 	end # End of Mastermind class
 end # End of Game module
-
-
-##Change calculate_feedback to generate an array instead of a hash.
