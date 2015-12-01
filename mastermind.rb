@@ -182,8 +182,6 @@ module Game
 
 		def ai_turn
 			sleep(0.05)
-			p "---------" # Test line
-			
 			if @remaining_turns == 12
 				# Do actions for first turn.
 				@guess = [1, 1, @ai_num, @ai_num]
@@ -231,15 +229,14 @@ module Game
 			elsif @ai_num == 7				
 				fill_empty_columns
 				@ai_stage = 3
+			elsif @ai_num == 6 && (@left_column + @right_column).detect{ |num| (@left_column + @right_column).count(num) > 1 } == nil
+				fill_sixes
+				@ai_stage = 3
 			end
-			#@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
-			p "Left column: #{@left_column}" # TEST LINE
-			p "Right column: #{@right_column}" # TEST LINE
 		end
 
 		# Guess the corret code
 		def ai_stage_three
-			p "REACHED STAGE 3" # TEST LINE
 			@stage_3_order_1 = [@left_column[0], @left_column[1], @right_column[0], @right_column[1]]
 			@stage_3_order_2 = [@left_column[0], @left_column[1], @right_column[1], @right_column[0]]
 			@stage_3_order_3 = [@left_column[1], @left_column[0], @right_column[0], @right_column[1]]
@@ -254,14 +251,11 @@ module Game
 			when 4
 				@guess = @stage_3_order_4
 			end
-			p @guess
-			p @stage_3_order_4
 			submit_guess
 			@stage_three_iteration += 1
 		end
 
 		def stage_two_initial_check
-			p "DOING INITIAL STAGE 2 CHECK" # TEST LINE
 			# Most recent turn
 			@feedback_log[-1][1].to_i.times do
 				@left_column << 1
@@ -270,28 +264,21 @@ module Game
 				@right_column << 1
 			end
 			x = -2
-			p "Feedback log total: #{@feedback_log.count}" # TEST LINE
 			until x == 0 - @feedback_log.count
+				
 				# Establishing which instance of feedback we're looking at.
 				p "----#{@feedback_log[x][2]}"
 				current_feedback = []
 				current_feedback << (@feedback_log[x][1].to_i - @feedback_log[-1][1].to_i) # Amount correct
 				current_feedback << (@feedback_log[x][2].to_i - @feedback_log[-1][2].to_i) # Amount wrong
 				current_feedback << @feedback_log[x][0] # Guess
-				p current_feedback # TEST LINE
-				p @feedback_log.count # TEST LINE
-				p x # TEST LINE
 
 				# Adding numbers to columns based on feedback.
-				p "!!!!!!!#{current_feedback}"
 				current_feedback[0].to_i.times { @right_column << current_feedback[2][2].to_i }
 				current_feedback[1].to_i.times { @left_column << current_feedback[2][2].to_i }
 
 				x -= 1
 			end
-			p "LEFT COLUMN: #{@left_column}"
-			p "RIGHT COLUMN: #{@right_column}"
-
 			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
 		end
 
@@ -301,6 +288,14 @@ module Game
 			while @left_column.count < 2 || @right_column.count < 2
 				@left_column << missing_number if @left_column.count < 2
 				@right_column << missing_number if @right_column.count < 2
+			end
+		end
+
+		def fill_sixes
+			both_columns = @left_column + @right_column
+			while @left_column.count < 2 || @right_column.count < 2
+				@left_column << 6 if @left_column.count < 2
+				@right_column << 6 if @right_column.count < 2
 			end
 		end
 
