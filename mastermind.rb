@@ -160,7 +160,8 @@ class Mastermind
 			puts "Please enter either Y or N."
 			answer = gets.chomp
 		end
-		answer == "Y" ? true : false
+		print "\n" if answer.upcase == "Y"
+		answer.upcase == "Y" ? true : false
 	end
 
 end # End of Mastermind class
