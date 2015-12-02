@@ -157,7 +157,6 @@ module Game
 			print @player_role == "guess" ? "Congratulations! You " : "The computer "
 			print "guessed the correct code (#{@code.join("")}) after #{12-@remaining_turns} "
 			print @remaining_turns == 11 ? "guess.\n" : "guesses.\n"
-			# guesses!\n"
 		end
 
 		def guesser_loses
@@ -246,15 +245,21 @@ module Game
 			@stage_3_order_2 = [@left_column[0], @left_column[1], @right_column[1], @right_column[0]]
 			@stage_3_order_3 = [@left_column[1], @left_column[0], @right_column[0], @right_column[1]]
 			@stage_3_order_4 = [@left_column[1], @left_column[0], @right_column[1], @right_column[0]]
-			case @stage_three_iteration
-			when 1
-				@guess = @stage_3_order_1
-			when 2
-				@guess = @stage_3_order_2
-			when 3
-				@guess = @stage_3_order_3
-			when 4
-				@guess = @stage_3_order_4
+			#p @feedback_log[-1]
+			if @feedback_log[-1][1] == 0 && @feedback_log[-1][2] == 4
+				new_guess = [@guess[1], @guess[0], @guess[3], @guess[2]]
+				@guess = new_guess
+			else
+				case @stage_three_iteration
+				when 1
+					@guess = @stage_3_order_1
+				when 2
+					@guess = @stage_3_order_2
+				when 3
+					@guess = @stage_3_order_3
+				when 4
+					@guess = @stage_3_order_4
+				end
 			end
 			submit_guess
 			@stage_three_iteration += 1
