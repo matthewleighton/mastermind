@@ -39,6 +39,7 @@ module Game
 				code << rand(1..6)
 			end
 			code
+			[1,1,1,1]
 		end
 
 		def choose_role
@@ -103,13 +104,13 @@ module Game
 
 # --------------------------------------------		
 
-	def submit_guess
-		unless correct_guess?
-			calculate_feedback
-			update_logs
-			display_feedback
+		def submit_guess
+			unless correct_guess?
+				calculate_feedback
+				update_logs
+				display_feedback
+			end
 		end
-	end
 
 		def game_continues?
 			(@remaining_turns > 0) && !(correct_guess?) ? true : false
@@ -141,6 +142,7 @@ module Game
 			@feedback_total = @feedback[:correct_position] + @feedback[:wrong_position]
 		end
 
+		# Add the most recent feedback to the log.
 		def update_logs
 			@feedback_log << [@guess.join(""), @feedback[:correct_position], @feedback[:wrong_position]]
 		end
@@ -153,7 +155,9 @@ module Game
 
 		def guesser_wins
 			print @player_role == "guess" ? "Congratulations! You " : "The computer "
-			print "guessed the correct code (#{@code.join("")}) after #{12-@remaining_turns} guesses!\n"
+			print "guessed the correct code (#{@code.join("")}) after #{12-@remaining_turns} "
+			print @remaining_turns == 11 ? "guess.\n" : "guesses.\n"
+			# guesses!\n"
 		end
 
 		def guesser_loses
@@ -172,6 +176,7 @@ module Game
 
 		# ------------- Computer Guessing -------------
 
+		# The user enters a code for the AI to guess.
 		def enter_code
 			puts "Enter a code for the computer to guess. (4 digits between 1 and 6)."
 			@code = gets.chomp.chars.map! {|x| x.to_i}
@@ -180,10 +185,11 @@ module Game
 			end
 		end
 
+		# The main cycle repeating for the AI's turns.
 		def ai_turn
 			sleep(0.05)
 			if @remaining_turns == 12
-				# Do actions for first turn.
+				# Actions for first turn.
 				@guess = [1, 1, @ai_num, @ai_num]
 				submit_guess
 				@original_feedback = @feedback
@@ -191,7 +197,7 @@ module Game
 				@ai_num += 1
 				if @feedback_total == 0
 					@ai_stage = 2
-					@block_number = @ai_num - 1
+					@block_number = 1
 				end
 			elsif @ai_stage == 1
 				ai_stage_one
@@ -214,9 +220,8 @@ module Game
 			end
 		end
 
-		# Fill the left and right lists.
+		# Fill the left and right columns.
 		def ai_stage_two
-			p "REACHED STAGE TWO"
 			@guess = [@block_number, @block_number, @ai_num, @ai_num]
 			submit_guess
 			@ai_num += 1
@@ -235,7 +240,7 @@ module Game
 			end
 		end
 
-		# Guess the corret code
+		# Guess the corret code.
 		def ai_stage_three
 			@stage_3_order_1 = [@left_column[0], @left_column[1], @right_column[0], @right_column[1]]
 			@stage_3_order_2 = [@left_column[0], @left_column[1], @right_column[1], @right_column[0]]
@@ -255,6 +260,7 @@ module Game
 			@stage_three_iteration += 1
 		end
 
+		# Reviews the feedback log to add numbers to the left/right columns when stage 2 is first triggered.
 		def stage_two_initial_check
 			# Most recent turn
 			@feedback_log[-1][1].to_i.times do
@@ -265,9 +271,7 @@ module Game
 			end
 			x = -2
 			until x == 0 - @feedback_log.count
-				
 				# Establishing which instance of feedback we're looking at.
-				p "----#{@feedback_log[x][2]}"
 				current_feedback = []
 				current_feedback << (@feedback_log[x][1].to_i - @feedback_log[-1][1].to_i) # Amount correct
 				current_feedback << (@feedback_log[x][2].to_i - @feedback_log[-1][2].to_i) # Amount wrong
@@ -282,6 +286,7 @@ module Game
 			@ai_stage = 3 if @left_column.count == 2 && @right_column.count == 2
 		end
 
+		# Used for deailing with a number appearing in the code more than twice.
 		def fill_empty_columns
 			both_columns = @left_column + @right_column
 			missing_number = both_columns.detect{ |num| both_columns.count(num) > 1 }
@@ -291,6 +296,7 @@ module Game
 			end
 		end
 
+		# Adds 6 to any remaining empty spaces in the left/right columns.
 		def fill_sixes
 			both_columns = @left_column + @right_column
 			while @left_column.count < 2 || @right_column.count < 2
